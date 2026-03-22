@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useThemeStore } from '../../store/theme';
 import { newsletterApi } from '../../lib/api';
 
@@ -51,9 +52,9 @@ export default function Footer() {
           <div>
             <h4 className="text-xs font-semibold tracking-widest uppercase mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="/" className={dark ? 'hover:text-cyan' : 'hover:text-primary'}>Shop</a></li>
-              <li><a href="/cart" className={dark ? 'hover:text-cyan' : 'hover:text-primary'}>Cart</a></li>
-              <li><a href="/admin" className={dark ? 'hover:text-cyan' : 'hover:text-primary'}>Admin</a></li>
+              <li><Link to="/" className={dark ? 'hover:text-cyan' : 'hover:text-primary'}>Shop</Link></li>
+              <li><Link to="/cart" className={dark ? 'hover:text-cyan' : 'hover:text-primary'}>Cart</Link></li>
+              <li><Link to="/admin" className={dark ? 'hover:text-cyan' : 'hover:text-primary'}>Admin</Link></li>
             </ul>
           </div>
 

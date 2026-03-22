@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../../store/theme';
 import { adminApi, type DashboardStats } from '../../lib/api';
@@ -129,9 +130,9 @@ export default function Dashboard() {
               { label: 'Process Pending Orders', icon: 'pending_actions', path: '/admin/orders' },
               { label: 'Manage Products', icon: 'coffee', path: '/admin/products' },
             ].map((action) => (
-              <a
+              <Link
                 key={action.label}
-                href={action.path}
+                to={action.path}
                 className={`flex items-center gap-3 p-3 rounded-sm transition-colors ${
                   dark
                     ? 'hover:bg-dark-surface-container-high text-dark-on-surface-variant hover:text-cyan'
@@ -141,7 +142,7 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined text-xl">{action.icon}</span>
                 <span className="text-sm font-medium">{action.label}</span>
                 <span className="material-symbols-outlined text-lg ml-auto">arrow_forward</span>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

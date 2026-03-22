@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { cartApi, type Cart } from '../lib/api';
 
-const CART_ID = 'guest-cart';
+const CART_ID = 'dev-user';
 
 interface CartState {
   cart: Cart | null;
