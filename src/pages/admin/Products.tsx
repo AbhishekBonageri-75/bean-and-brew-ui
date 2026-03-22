@@ -1,13 +1,36 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '../../store/theme';
 import { adminApi, type Product, type PageResponse } from '../../lib/api';
+
+const CATEGORY_LABELS: Record<string, string> = {
+  WHOLE_BEAN: 'Whole Bean',
+  GROUND: 'Ground',
+  SPECIALTY: 'Specialty',
+};
+
+const formatCategory = (cat: string) => CATEGORY_LABELS[cat] ?? cat;
+
+const EMPTY_FORM = {
+  name: '',
+  slug: '',
+  description: '',
+  category: 'WHOLE_BEAN',
+  originCountry: '',
+  originRegion: '',
+  roastLevel: 3,
+  tastingNotes: '',
+};
 
 export default function AdminProducts() {
   const dark = useThemeStore((s) => s.dark);
   const [data, setData] = useState<PageResponse<Product> | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -22,15 +45,36 @@ export default function AdminProducts() {
   };
 
   useEffect(() => {
+    document.title = 'Products | Bean & Brew Admin';
     fetchProducts();
   }, [page]);
 
   const toggleFeatured = async (product: Product) => {
+    // Optimistic update
+    setData((prev) =>
+      prev
+        ? { ...prev, content: prev.content.map((p) => (p.id === product.id ? { ...p, featured: !p.featured } : p)) }
+        : prev
+    );
     try {
-      await adminApi.updateProduct(product.id, { isFeatured: !product.featured });
+      await adminApi.updateProduct(product.id, { featured: !product.featured });
       fetchProducts();
     } catch {
-      // ignore
+      fetchProducts(); // revert on error
+    }
+  };
+
+  const toggleActive = async (product: Product) => {
+    setData((prev) =>
+      prev
+        ? { ...prev, content: prev.content.map((p) => (p.id === product.id ? { ...p, active: !p.active } : p)) }
+        : prev
+    );
+    try {
+      await adminApi.updateProduct(product.id, { active: !product.active });
+      fetchProducts();
+    } catch {
+      fetchProducts();
     }
   };
 
@@ -44,12 +88,48 @@ export default function AdminProducts() {
     }
   };
 
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveError('');
+    try {
+      await adminApi.createProduct({
+        ...form,
+        flavorNotes: [],
+        active: true,
+        featured: false,
+      });
+      setShowAddModal(false);
+      setForm(EMPTY_FORM);
+      fetchProducts();
+    } catch {
+      setSaveError('Failed to create product. Check all fields and try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const inputClass = `w-full px-3 py-2 text-sm rounded-sm ${
+    dark
+      ? 'bg-dark-surface-container-high text-dark-on-surface placeholder:text-dark-on-surface-variant border border-white/10'
+      : 'bg-surface text-on-surface placeholder:text-on-surface-variant border border-primary/10'
+  }`;
+
   return (
     <div className="p-6 lg:p-10">
       <div className="flex items-center justify-between mb-8">
         <h1 className={`font-serif text-2xl font-semibold ${dark ? 'text-dark-on-surface' : 'text-primary'}`}>
           Products
         </h1>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-sm ${
+            dark ? 'bg-cyan text-dark-surface hover:bg-cyan-dim' : 'bg-primary text-on-primary hover:bg-primary-light'
+          }`}
+        >
+          <span className="material-symbols-outlined text-base">add</span>
+          Add Product
+        </button>
       </div>
 
       {loading ? (
@@ -75,10 +155,10 @@ export default function AdminProducts() {
                       {product.name}
                     </h3>
                     <p className={`text-xs mt-0.5 ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>
-                      {product.category} \u00b7 {product.originCountry}
+                      {formatCategory(product.category)} · {product.originCountry}
                     </p>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap justify-end">
                     {product.badgeLabel && (
                       <span className={`px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-sm ${
                         dark ? 'bg-cyan/15 text-cyan' : 'bg-accent/10 text-accent'
@@ -86,11 +166,13 @@ export default function AdminProducts() {
                         {product.badgeLabel}
                       </span>
                     )}
-                    {!product.active && (
-                      <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-sm bg-error/10 text-error">
-                        Inactive
-                      </span>
-                    )}
+                    <span className={`px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded-sm ${
+                      product.active
+                        ? 'bg-success/10 text-success'
+                        : 'bg-error/10 text-error'
+                    }`}>
+                      {product.active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
                 </div>
 
@@ -102,12 +184,12 @@ export default function AdminProducts() {
                         dark ? 'bg-dark-surface-container-high text-dark-on-surface-variant' : 'bg-surface-container-low text-on-surface-variant'
                       }`}
                     >
-                      {v.weightGrams}g — ${v.price.toFixed(2)}
+                      {v.weightGrams}g — ${(v.price ?? 0).toFixed(2)}
                     </span>
                   ))}
                 </div>
 
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-2 mt-4 flex-wrap">
                   <button
                     onClick={() => toggleFeatured(product)}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-sm transition-colors ${
@@ -116,7 +198,17 @@ export default function AdminProducts() {
                         : dark ? 'bg-dark-surface-container-high text-dark-on-surface-variant hover:text-cyan' : 'bg-surface-container-low text-on-surface-variant hover:text-primary'
                     }`}
                   >
-                    {product.featured ? 'Featured' : 'Set Featured'}
+                    {product.featured ? 'Featured ✓' : 'Set Featured'}
+                  </button>
+                  <button
+                    onClick={() => toggleActive(product)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-sm transition-colors ${
+                      product.active
+                        ? dark ? 'bg-dark-surface-container-high text-dark-on-surface-variant hover:text-error' : 'bg-surface-container-low text-on-surface-variant hover:text-error'
+                        : 'bg-success/10 text-success hover:bg-success/20'
+                    }`}
+                  >
+                    {product.active ? 'Deactivate' : 'Activate'}
                   </button>
                   <button
                     onClick={() => deleteProduct(product.id)}
@@ -148,6 +240,83 @@ export default function AdminProducts() {
           )}
         </>
       )}
+
+      {/* Add Product Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className={`relative w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-sm ${
+                dark ? 'bg-dark-surface-container' : 'bg-surface'
+              }`}
+            >
+              <h2 className={`font-serif text-xl font-semibold mb-6 ${dark ? 'text-dark-on-surface' : 'text-primary'}`}>
+                Add Product
+              </h2>
+              <form onSubmit={handleAddProduct} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Name *</label>
+                    <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') })} className={inputClass} placeholder="Ethiopian Yirgacheffe" />
+                  </div>
+                  <div>
+                    <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Slug *</label>
+                    <input required value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputClass} placeholder="ethiopian-yirgacheffe" />
+                  </div>
+                </div>
+                <div>
+                  <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Category *</label>
+                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass}>
+                    <option value="WHOLE_BEAN">Whole Bean</option>
+                    <option value="GROUND">Ground</option>
+                    <option value="SPECIALTY">Specialty</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Origin Country *</label>
+                    <input required value={form.originCountry} onChange={(e) => setForm({ ...form, originCountry: e.target.value })} className={inputClass} placeholder="Ethiopia" />
+                  </div>
+                  <div>
+                    <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Region</label>
+                    <input value={form.originRegion} onChange={(e) => setForm({ ...form, originRegion: e.target.value })} className={inputClass} placeholder="Yirgacheffe" />
+                  </div>
+                </div>
+                <div>
+                  <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Roast Level (1–5)</label>
+                  <input type="number" min={1} max={5} value={form.roastLevel} onChange={(e) => setForm({ ...form, roastLevel: Number(e.target.value) })} className={inputClass} />
+                </div>
+                <div>
+                  <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Description</label>
+                  <textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClass} placeholder="Brief product description..." />
+                </div>
+                <div>
+                  <label className={`text-xs font-semibold tracking-wider uppercase mb-1 block ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>Tasting Notes</label>
+                  <textarea rows={2} value={form.tastingNotes} onChange={(e) => setForm({ ...form, tastingNotes: e.target.value })} className={inputClass} placeholder="Floral, citrus, clean finish..." />
+                </div>
+                {saveError && <p className="text-error text-xs">{saveError}</p>}
+                <div className="flex gap-3 justify-end pt-2">
+                  <button type="button" onClick={() => setShowAddModal(false)} className={`px-4 py-2 text-sm font-medium rounded-sm ${dark ? 'text-dark-on-surface-variant hover:text-dark-on-surface' : 'text-on-surface-variant hover:text-on-surface'}`}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={saving} className={`px-6 py-2 text-sm font-bold rounded-sm ${dark ? 'bg-cyan text-dark-surface hover:bg-cyan-dim' : 'bg-primary text-on-primary hover:bg-primary-light'} disabled:opacity-40`}>
+                    {saving ? 'Creating...' : 'Create Product'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

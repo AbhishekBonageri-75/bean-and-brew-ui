@@ -2,20 +2,28 @@ import { useState } from 'react';
 import { useThemeStore } from '../../store/theme';
 import { newsletterApi } from '../../lib/api';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Footer() {
   const dark = useThemeStore((s) => s.dark);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [emailError, setEmailError] = useState('');
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
+    if (!EMAIL_RE.test(email)) {
+      setEmailError('Please enter a valid email address.');
+      return;
+    }
+    setEmailError('');
     try {
       await newsletterApi.subscribe(email);
       setSubscribed(true);
       setEmail('');
     } catch {
-      // ignore
+      setEmailError('Something went wrong. Please try again.');
     }
   };
 
@@ -56,28 +64,31 @@ export default function Footer() {
                 Thanks for subscribing!
               </p>
             ) : (
-              <form onSubmit={handleSubscribe} className="flex gap-2">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className={`flex-1 px-3 py-2 text-sm rounded-sm ${
-                    dark
-                      ? 'bg-dark-surface-container-high text-dark-on-surface placeholder:text-dark-on-surface-variant border border-white/10'
-                      : 'bg-surface text-on-surface placeholder:text-on-surface-variant border border-primary/10'
-                  }`}
-                />
-                <button
-                  type="submit"
-                  className={`px-4 py-2 text-sm font-semibold rounded-sm transition-colors ${
-                    dark
-                      ? 'bg-cyan text-dark-surface hover:bg-cyan-dim'
-                      : 'bg-primary text-on-primary hover:bg-primary-light'
-                  }`}
-                >
-                  Join
-                </button>
+              <form onSubmit={handleSubscribe} className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+                    placeholder="your@email.com"
+                    className={`flex-1 px-3 py-2 text-sm rounded-sm ${
+                      dark
+                        ? 'bg-dark-surface-container-high text-dark-on-surface placeholder:text-dark-on-surface-variant border border-white/10'
+                        : 'bg-surface text-on-surface placeholder:text-on-surface-variant border border-primary/10'
+                    }`}
+                  />
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 text-sm font-semibold rounded-sm transition-colors ${
+                      dark
+                        ? 'bg-cyan text-dark-surface hover:bg-cyan-dim'
+                        : 'bg-primary text-on-primary hover:bg-primary-light'
+                    }`}
+                  >
+                    Join
+                  </button>
+                </div>
+                {emailError && <p className="text-error text-xs">{emailError}</p>}
               </form>
             )}
           </div>

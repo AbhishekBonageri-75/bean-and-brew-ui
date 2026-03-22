@@ -30,7 +30,17 @@ export default function Home() {
     load();
   }, [category]);
 
+  useEffect(() => {
+    document.title = 'Bean & Brew — Artisanal Coffee';
+  }, []);
+
   const categories = ['', 'WHOLE_BEAN', 'GROUND', 'SPECIALTY'];
+  const categoryLabels: Record<string, string> = {
+    '': 'All',
+    WHOLE_BEAN: 'Whole Bean',
+    GROUND: 'Ground',
+    SPECIALTY: 'Specialty',
+  };
 
   return (
     <div className="min-h-screen">
@@ -147,7 +157,7 @@ export default function Home() {
                       : 'bg-surface text-on-surface-variant hover:text-primary'
                 }`}
               >
-                {cat || 'All'}
+                {categoryLabels[cat]}
               </button>
             ))}
           </div>

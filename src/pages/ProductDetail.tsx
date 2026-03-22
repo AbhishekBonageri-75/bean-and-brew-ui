@@ -24,6 +24,7 @@ export default function ProductDetail() {
       .getBySlug(slug)
       .then(({ data }) => {
         setProduct(data);
+        document.title = `${data.name} | Bean & Brew`;
         if (data.variants?.length) setSelectedVariant(data.variants[0]);
       })
       .catch(() => setProduct(null))

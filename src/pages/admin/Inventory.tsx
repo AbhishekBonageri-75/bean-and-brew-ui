@@ -26,6 +26,7 @@ export default function AdminInventory() {
   };
 
   useEffect(() => {
+    document.title = 'Inventory | Bean & Brew Admin';
     fetchInventory();
   }, []);
 
@@ -149,10 +150,10 @@ export default function AdminInventory() {
                     {item.sku}
                   </td>
                   <td className={`py-3 px-4 ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>
-                    {item.weightGrams}g \u00b7 {item.grindType.replace('_', ' ')}
+                    {item.weightGrams}g · {item.grindType.replace('_', ' ')}
                   </td>
                   <td className={`py-3 px-4 text-right ${dark ? 'text-dark-on-surface' : 'text-on-surface'}`}>
-                    ${item.price.toFixed(2)}
+                    ${(item.price ?? 0).toFixed(2)}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <span className={`font-semibold ${item.lowStock ? 'text-error' : dark ? 'text-dark-on-surface' : 'text-on-surface'}`}>

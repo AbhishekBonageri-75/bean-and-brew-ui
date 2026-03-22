@@ -4,6 +4,14 @@ import { useThemeStore } from '../../store/theme';
 import { adminApi, type Order, type PageResponse } from '../../lib/api';
 
 const STATUSES = ['', 'PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+const STATUS_LABELS: Record<string, string> = {
+  '': 'All',
+  PENDING: 'Pending',
+  PROCESSING: 'Processing',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+};
 
 export default function AdminOrders() {
   const dark = useThemeStore((s) => s.dark);
@@ -30,6 +38,10 @@ export default function AdminOrders() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    document.title = 'Orders | Bean & Brew Admin';
+  }, []);
 
   useEffect(() => {
     fetchOrders();
@@ -105,7 +117,7 @@ export default function AdminOrders() {
                 : dark ? 'bg-dark-surface-container text-dark-on-surface-variant hover:text-cyan' : 'bg-surface-container text-on-surface-variant hover:text-primary'
             }`}
           >
-            {s || 'All'}
+            {STATUS_LABELS[s]}
           </button>
         ))}
       </div>

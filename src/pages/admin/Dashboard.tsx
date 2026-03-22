@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    document.title = 'Dashboard | Bean & Brew Admin';
     adminApi
       .dashboardStats()
       .then(({ data }) => setStats(data))
@@ -30,25 +31,25 @@ export default function Dashboard() {
     ? [
         {
           label: 'Total Revenue',
-          value: `$${stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-          change: stats.revenueChange,
+          value: `$${(stats.totalRevenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+          change: stats.revenueChange ?? null,
           icon: 'attach_money',
         },
         {
           label: 'Total Orders',
-          value: stats.totalOrders.toLocaleString(),
-          change: stats.ordersChange,
+          value: (stats.totalOrders ?? 0).toLocaleString(),
+          change: stats.ordersChange ?? null,
           icon: 'receipt_long',
         },
         {
           label: 'Total Customers',
-          value: stats.totalCustomers.toLocaleString(),
-          change: stats.customersChange,
+          value: (stats.totalCustomers ?? 0).toLocaleString(),
+          change: stats.customersChange ?? null,
           icon: 'group',
         },
         {
           label: 'Avg Order Value',
-          value: `$${stats.averageOrderValue.toFixed(2)}`,
+          value: `$${(stats.averageOrderValue ?? 0).toFixed(2)}`,
           change: null,
           icon: 'trending_up',
         },

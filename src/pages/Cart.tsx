@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useThemeStore } from '../store/theme';
 import { useCartStore } from '../store/cart';
@@ -9,8 +9,10 @@ export default function CartPage() {
   const { cart, fetchCart, updateItem, removeItem, applyPromo, loading } = useCartStore();
   const [promoInput, setPromoInput] = useState('');
   const [promoError, setPromoError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = 'Cart | Bean & Brew';
     fetchCart();
   }, [fetchCart]);
 
@@ -36,14 +38,15 @@ export default function CartPage() {
 
   const items = cart?.items ?? [];
   const isEmpty = items.length === 0;
+  const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
       <h1 className={`font-serif text-3xl font-semibold mb-2 ${dark ? 'text-dark-on-surface' : 'text-primary'}`}>
-        Your Selection
+        {isEmpty ? 'Your Cart' : 'Your Selection'}
       </h1>
       <p className={`text-sm mb-10 ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>
-        {isEmpty ? 'Your cart is empty.' : `${items.length} item${items.length > 1 ? 's' : ''} in your selection`}
+        {isEmpty ? 'Your cart is empty.' : `${totalQty} item${totalQty > 1 ? 's' : ''} in your selection`}
       </p>
 
       {isEmpty ? (
@@ -93,7 +96,7 @@ export default function CartPage() {
                     {item.productName}
                   </h3>
                   <p className={`text-xs ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>
-                    {item.weightGrams}g \u00b7 {item.grindType.replace('_', ' ')}
+                    {item.weightGrams}g · {item.grindType.replace('_', ' ')}
                   </p>
                   <p className={`text-xs mt-0.5 ${dark ? 'text-dark-on-surface-variant' : 'text-on-surface-variant'}`}>
                     SKU: {item.sku}
@@ -225,6 +228,7 @@ export default function CartPage() {
               </div>
 
               <button
+                onClick={() => navigate('/checkout')}
                 className={`w-full mt-6 h-12 text-sm font-bold tracking-wider uppercase rounded-sm transition-colors ${
                   dark
                     ? 'bg-cyan text-dark-surface hover:bg-cyan-dim'
